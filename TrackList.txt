@@ -1,0 +1,32 @@
+Tracking list
+-------------
+
+-: player controls (play,pause, etc)            DONE
+-: Brose files in computer                      DONE
+-: load file to display                         DONE
+-: get file metadata (artist,ablum, etc)        DONE
+-: add item to playlist                         DONE
+-: add common contols to playlist               DONE
+-: movable slider                               DONE
+-: make slider seekable                         DONE
+-: start time and end time                      DONE
+-: playlist modes (looping)                     DONE
+-: shuffle                                      DONE
+-: basic play,pause,next etc                    DONE
+-: drag and drop media from details to playlist +
+-: drap and drop to reorder playlist            +
+-: play all button                              +++
+-: Fix duplicate playlist items                 DONE
+-: album art                                    DONE
+-: playback rate                                DONE
+-: save playlist                                +
+-: open playlist                                +
+-: clear playlist                               DONE
+-: fix playlist index reordering after shuffle. DONE
+-: Add context menu to playlist right clicked   +
+-: open player when play list double clicked    +
+-: minimize to semi mode                        +
+-: Do something about video metadata            DONE
+-: Chat service                                 DONE
+-: audio recording service                      DONE
+-: convert file format service                  +
