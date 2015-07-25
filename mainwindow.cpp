@@ -12,13 +12,15 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    //add paths to favorites
     favorites.append("C:/Users/Bill/Music");
     favorites.append("C:/Users/Bill/Downloads");
 
     itemChanged = false;
-    setIcons();
-    loadComputerTreeWidget();
+    setIcons(); //set window icons
+    loadComputerTreeWidget();   //load direcotries in computerTreeWidget
 
+    //initialize player controls
     muted = false;
     ui->playButton->setEnabled(false);
     ui->nextButton->setEnabled(false);
@@ -27,34 +29,45 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->itemsLabel->setText("0 items");
     ui->fullScreenButton->setEnabled(false);
 
+    //initials
     videoOn = false;
     artOn = true;
 
+    //create player and playlist
     player = new QMediaPlayer;
     playlist = new QMediaPlaylist;
 
+    //set player playlist
     player->setPlaylist(playlist);
 
+    //create videowidget at specified location
     videoWidget = new QVideoWidget(this);
     videoWidget->setGeometry(890,120,221,180);
 
+    //create album art label at same position as video widget
+    //with default album art
     defaultAlbumArt = "C:/Users/Bill/Desktop/default.jpg";
     albumArtLabel = new QLabel(this);
     albumArtLabel->setGeometry(890,120,221,180);
 
+    //add album art widget the layout
     layout()->addWidget(albumArtLabel);
 
+    //set the video ouput of the player
     player->setVideoOutput(videoWidget);
 
+    //initialize chat dialog
     chatDialog = new ChatDialog();
     chatDialog->setModal(false);
 
+    //instantiate pixmap with default album art
     QPixmap pixmap(defaultAlbumArt);
     //pixmap.scaled(albumArtLabel->height(),albumArtLabel->width(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
     pixmap = pixmap.scaledToHeight(albumArtLabel->height());
     pixmap = pixmap.scaledToWidth(albumArtLabel->width());
     albumArtLabel->setPixmap(pixmap);
 
+    //connections
     connect(player,SIGNAL(positionChanged(qint64)),this,SLOT(on_value_changed(qint64)));
     connect(player,SIGNAL(durationChanged(qint64)),this,SLOT(on_duration_changed(qint64)));
     connect(playlist,SIGNAL(currentIndexChanged(int)),this,SLOT(marquee(int)));
@@ -72,21 +85,29 @@ MainWindow::~MainWindow()
 //add child node to computer tree widget
 void MainWindow::addChild(QTreeWidgetItem *item)
 {
+    //use QDir to manage directories and subdirectories
     QDir subDir(item->text(0));
+
+    //file info of files in directory
     QFileInfoList list = subDir.entryInfoList();
 
+    //check for non-empty directories
     if(list.size() > 0)
     {
-    list.removeFirst(); //remove .
-    list.removeFirst(); //remove ..
+        list.removeFirst(); //remove .
+        list.removeFirst(); //remove ..
     }
+
     //add parent directories
     foreach(QFileInfo info, list)
     {
+        //ensure file is a directory
         if(info.isDir())
         {
+            //create child item with parent item
             QTreeWidgetItem *child = new QTreeWidgetItem(item);
             child->setText(0,info.absoluteFilePath());
+
             //add subdirectory
             item->addChild(child);
         }
@@ -98,25 +119,31 @@ void MainWindow::addChild(QTreeWidgetItem *item)
 
 //After adding directories to the computer tree widget,
 //nodes have "absolute files names" as text
-//replace this text with the directory names.
+//replace these texts with the directory names.
 void MainWindow::showFileNames(QTreeWidgetItem *item)
 {
     QDir x = item->text(0);
     item->setText(0,x.dirName());
 
-    //show name form this node and child nodes
+    //write directory names for this node and child nodes
     for(int i = 0; i < item->childCount(); i++)
         showFileNames(item->child(i));
 }
 
 //clicking an item on the computer tree widget will
-//display the files in the clieck directory in the detials tree widget
+//display the files in the clicked directory in the detials tree widget
 void MainWindow::on_computerTreeWidget_itemClicked(QTreeWidgetItem *item, int column)
 {
     //clear the widget first
     ui->detailsTreeWidget->clear();
+
+    //instantiate empty treewidget item
     QTreeWidgetItem *parent = NULL;
+
+    //initialize path with the text on the treewidget item clicked
     path = item->text(0);
+
+    //get parent item of item clicked
     parent = item->parent();
 
     //recursively loop back through each node of the computer tree widget to
@@ -131,6 +158,7 @@ void MainWindow::on_computerTreeWidget_itemClicked(QTreeWidgetItem *item, int co
     s.erase(s.begin(),s.begin()+s.find_first_of('/')+1);
     path = QString::fromStdString(s);
 
+    //find real path by cheching with favorites
     foreach(QString dir,favorites)
     {
         QString p = dir+"/"+path;
@@ -140,8 +168,8 @@ void MainWindow::on_computerTreeWidget_itemClicked(QTreeWidgetItem *item, int co
             break;
         }
     }
-
     QDir d(path);
+
     //list all files in directory
     foreach(QFileInfo info, d.entryInfoList())
     {
@@ -151,14 +179,17 @@ void MainWindow::on_computerTreeWidget_itemClicked(QTreeWidgetItem *item, int co
         {
             QTreeWidgetItem *x = new QTreeWidgetItem(ui->detailsTreeWidget);
 
+            //use taglib to get file tags
             TagLib::FileName fn(info.absoluteFilePath().toStdWString().c_str());
             TagLib::FileRef ref(fn,true,TagLib::AudioProperties::Accurate);
 
+            //file tags
             QString artist = ref.tag()->artist().toCString();
             QString album = ref.tag()->artist().toCString();
             QString title = ref.tag()->title().toCString();
             QString track = QString::number(ref.tag()->track());
             QString duration = "0:0";
+
 
             int length = ref.audioProperties()->length();
             if(length > 0)
@@ -169,6 +200,7 @@ void MainWindow::on_computerTreeWidget_itemClicked(QTreeWidgetItem *item, int co
             x->setText(3,artist);
             x->setText(4,album);
 
+            //add item to tree widget
             ui->detailsTreeWidget->insertTopLevelItem(ui->detailsTreeWidget->topLevelItemCount(),x);
 
         }
@@ -191,7 +223,8 @@ void MainWindow::on_computerTreeWidget_itemClicked(QTreeWidgetItem *item, int co
 //restart the song
 void MainWindow::on_detailsTreeWidget_itemDoubleClicked(QTreeWidgetItem *item,int column)
 {
-    bool inPlayList = false;
+    bool inPlayList = false; //whether item is already in playlist widget
+
     QDir d(path);
     foreach(QFileInfo info , d.entryInfoList())
     {
@@ -209,6 +242,7 @@ void MainWindow::on_detailsTreeWidget_itemDoubleClicked(QTreeWidgetItem *item,in
             QString artist = ref.tag()->artist().toCString();
             QString title = ref.tag()->title().toCString();
 
+            //is this really the file?
             if((artist == item->text(3)) && (title == item->text(1))
                     || item->text(1) == info.fileName())
             {
@@ -226,7 +260,7 @@ void MainWindow::on_detailsTreeWidget_itemDoubleClicked(QTreeWidgetItem *item,in
                         }
                     }
                     if(inPlayList)
-                        break;;
+                        break;
 
                     playlist->addMedia(QMediaContent(QUrl::fromLocalFile(info.absoluteFilePath())));
 
@@ -264,8 +298,8 @@ void MainWindow::on_detailsTreeWidget_itemDoubleClicked(QTreeWidgetItem *item,in
                 if(inPlayList)
                     break;
 
-
                 playlist->addMedia(QMediaContent(QUrl::fromLocalFile(info.absoluteFilePath())));
+
                 QTreeWidgetItem *x = new QTreeWidgetItem(ui->playListTreeWidget);
                 x->setText(0,item->text(1));
                 x->setFlags(x->flags() & Qt::ItemIsDropEnabled);
@@ -274,14 +308,11 @@ void MainWindow::on_detailsTreeWidget_itemDoubleClicked(QTreeWidgetItem *item,in
                 break;
             }
         }
-
     }
-    qDebug()<< "4";
     if(!inPlayList)
     {
         //move playlist to newly added media
         playlist->setCurrentIndex(ui->playListTreeWidget->topLevelItemCount()-1);
-        //play
         player->play();
     }
 }
@@ -615,7 +646,7 @@ void MainWindow::on_actionOpen_File_triggered()
                          :title);
             item->setFlags(item->flags() & Qt::ItemIsDropEnabled);
             ui->playListTreeWidget->insertTopLevelItem(i+ui->playListTreeWidget->topLevelItemCount(),item);
-            playlist->addMedia(QUrl::fromLocalFile(info.absoluteFilePath()));
+            playlist->addMedia(QMediaContent(QUrl::fromLocalFile(info.absoluteFilePath())));
 
         }
         else
@@ -623,7 +654,7 @@ void MainWindow::on_actionOpen_File_triggered()
             QTreeWidgetItem *item = new QTreeWidgetItem(ui->playListTreeWidget);
             item->setFlags(item->flags() & Qt::ItemIsDropEnabled);
             ui->playListTreeWidget->insertTopLevelItem(i+ui->playListTreeWidget->topLevelItemCount(),item);
-            playlist->addMedia(QUrl::fromLocalFile(info.absoluteFilePath()));
+            playlist->addMedia(QMediaContent(QUrl::fromLocalFile(info.absoluteFilePath())));
         }
     }
 
@@ -648,6 +679,8 @@ void MainWindow::on_mediaStatusChanged(QMediaPlayer::MediaStatus status)
         }
     }
 }
+
+//helper function. checks whether string s1 is contained in string s2
 bool MainWindow::contains(QString s1, QString s2)
 {
     for (int i = 0; i < s1.length() - s2.length(); i++)
@@ -708,9 +741,11 @@ void MainWindow::on_videoAvailableChanged(bool available)
 
 void MainWindow::on_playAllButton_clicked()
 {
-    player->stop();
-    ui->playListTreeWidget->clear();
-    playlist->clear();
+
+    player->stop(); //stop player
+
+    ui->playListTreeWidget->clear();      //clear playlist widget
+    playlist->clear();                    //clear playlist
 
     QTreeWidgetItem *parent = NULL;
     path = ui->computerTreeWidget->currentItem()->text(0);
@@ -800,8 +835,6 @@ void MainWindow::on_rateComboBox_currentIndexChanged(int index)
     for(int i = 0; i < s_rate.length(); i++)
         ss_rate+=s_rate.at(i);
     player->setPlaybackRate(QString::fromStdString(ss_rate).toDouble());
-
-
 }
 
 void MainWindow::on_clearListButton_clicked()

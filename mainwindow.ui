@@ -588,6 +588,9 @@
       <height>261</height>
      </rect>
     </property>
+    <property name="acceptDrops">
+     <bool>true</bool>
+    </property>
     <property name="dragEnabled">
      <bool>true</bool>
     </property>

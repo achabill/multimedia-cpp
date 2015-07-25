@@ -15,7 +15,7 @@ Tracking list
 -: basic play,pause,next etc                    DONE
 -: drag and drop media from details to playlist +
 -: drap and drop to reorder playlist            +
--: play all button                              +++
+-: play all button                              DONE
 -: Fix duplicate playlist items                 DONE
 -: album art                                    DONE
 -: playback rate                                DONE
